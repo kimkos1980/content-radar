@@ -18,6 +18,9 @@ const parser = new Parser({
   }
 });
 
+const FRESHNESS_WINDOW_HOURS = 6;
+const FRESHNESS_WINDOW_MS = FRESHNESS_WINDOW_HOURS * 60 * 60 * 1000;
+
 function normalizeUrl(value: string | null | undefined) {
   if (!value) {
     return null;
@@ -30,6 +33,19 @@ function normalizeUrl(value: string | null | undefined) {
   } catch {
     return value.trim();
   }
+}
+
+function isFreshCandidate(candidate: ContentCandidate, now = Date.now()) {
+  if (!candidate.published_at) {
+    return false;
+  }
+
+  const publishedAt = Date.parse(candidate.published_at);
+  if (Number.isNaN(publishedAt)) {
+    return false;
+  }
+
+  return publishedAt >= now - FRESHNESS_WINDOW_MS;
 }
 
 function googleNewsRssUrl(source: ContentSource) {
@@ -147,7 +163,7 @@ async function collectRss(source: ContentSource): Promise<ContentCandidate[]> {
         description: item.contentSnippet ?? item.content ?? null,
         thumbnail_url: null,
         language: source.language,
-        published_at: item.isoDate ?? null
+        published_at: item.isoDate ?? item.pubDate ?? null
       } satisfies ContentCandidate;
     })
     .filter(Boolean) as ContentCandidate[];
@@ -181,6 +197,7 @@ export async function collectContent(): Promise<CollectResult> {
     inserted: 0,
     sent: 0,
     skippedDuplicates: 0,
+    skippedStale: 0,
     errors: []
   };
 
@@ -213,6 +230,11 @@ export async function collectContent(): Promise<CollectResult> {
       result.found += candidates.length;
 
       for (const candidate of candidates) {
+        if (!isFreshCandidate(candidate)) {
+          result.skippedStale += 1;
+          continue;
+        }
+
         const { data: existing, error: existingError } = await supabase
           .from("content_items")
           .select("id")

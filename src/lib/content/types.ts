@@ -55,6 +55,7 @@ export type CollectResult = {
   inserted: number;
   sent: number;
   skippedDuplicates: number;
+  skippedStale: number;
   errors: Array<{
     source: string;
     message: string;

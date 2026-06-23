@@ -5,6 +5,7 @@ import mimetypes
 import os
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from telethon.tl.custom.message import Message
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 ENV_FILES = [ROOT_DIR / ".env.local", ROOT_DIR / ".env"]
+FRESHNESS_WINDOW = timedelta(hours=6)
 
 DEFAULT_STOP_WORDS = [
     "18+",
@@ -186,6 +188,17 @@ def media_type(message: Message) -> str | None:
     return "document"
 
 
+def is_fresh_message(message: Message, now: datetime) -> bool:
+    if not message.date:
+        return False
+
+    published_at = message.date
+    if published_at.tzinfo is None:
+        published_at = published_at.replace(tzinfo=timezone.utc)
+
+    return published_at >= now - FRESHNESS_WINDOW
+
+
 def channel_entity_ref(channel: dict[str, Any]) -> str:
     username = (channel.get("username") or "").strip().lstrip("@")
     if username:
@@ -331,6 +344,7 @@ async def collect_channel(
     last_message_id = int(channel.get("last_message_id") or 0)
     highest_seen_id = last_message_id
     stats = {"seen": 0, "inserted": 0, "sent": 0, "skipped": 0}
+    now = datetime.now(timezone.utc)
 
     async for message in client.iter_messages(
         entity,
@@ -342,6 +356,10 @@ async def collect_channel(
 
         highest_seen_id = max(highest_seen_id, message.id)
         stats["seen"] += 1
+
+        if not is_fresh_message(message, now):
+            stats["skipped"] += 1
+            continue
 
         text = message_text(message)
         media = media_type(message)
