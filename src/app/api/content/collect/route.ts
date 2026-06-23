@@ -7,13 +7,18 @@ export const runtime = "nodejs";
 function isAuthorized(request: Request) {
   const secret = process.env.CONTENT_COLLECT_SECRET;
 
-  if (!secret) {
-    return false;
-  }
-
   const url = new URL(request.url);
   const querySecret = url.searchParams.get("secret");
   const authHeader = request.headers.get("authorization");
+  const cronHeader = request.headers.get("x-vercel-cron");
+
+  if (cronHeader === "1") {
+    return true;
+  }
+
+  if (!secret) {
+    return false;
+  }
 
   return querySecret === secret || authHeader === `Bearer ${secret}`;
 }
