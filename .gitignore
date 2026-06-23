@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+.env
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+tsconfig.tsbuildinfo
+__pycache__
+*.pyc
+telegram_collector/*.session
+telegram_collector/*.session-journal
+supabase/.temp
