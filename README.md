@@ -82,3 +82,5 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=https://YOU
 - Закрытые аккаунты не парсятся.
 - TikTok и Instagram на первом этапе добавляются только ручной ссылкой через Telegram-бота.
 - В `content_items` сохраняются только ссылки, заголовки, описания, источник, категория, оценка и редакторские поля.
+
+Deployment trigger
