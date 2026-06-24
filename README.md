@@ -84,3 +84,5 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=https://YOU
 - В `content_items` сохраняются только ссылки, заголовки, описания, источник, категория, оценка и редакторские поля.
 
 Deployment trigger
+
+Deployment trigger
